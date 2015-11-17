@@ -50,7 +50,7 @@ class DocFrame(object):
 class MutableToken(object):
 
     def __init__(self, parent, i):
-        self.parent = parent
+        self.parent = parent #use a weakref here
         self.i = i
 
     @property
@@ -100,11 +100,17 @@ class MutableToken(object):
         return str(self)
 
 
+def ensure_unicode(string):
+    if isinstance(string, str):
+        return string.decode('utf-8')
+    else:
+        return string
+
+
 class MutableDoc(DocFrame):
 
     def __init__(self, string):
-        if isinstance(string, str):
-            string = string.decode('utf-8')
+        string = ensure_unicode(string)
         self._doc = nlp(string)
         for ent in reversed(self._doc.ents):
             ent.merge(ent.root.tag_, ent.root.lemma_, ent.label_)
@@ -112,5 +118,12 @@ class MutableDoc(DocFrame):
 
     def mutate_token(self, i, value):
         strings = [token.string for token in self._doc]
-        strings[i] = value
+        strings[i] = value if self._doc[i+1].is_punct else value + " "
         self.__init__("".join(strings))
+
+
+    def __str__(self):
+        return self._doc.string
+
+    def __repr__(self):
+        return str(self)
