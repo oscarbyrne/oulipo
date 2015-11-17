@@ -1,5 +1,8 @@
 import spacy.en
 
+import toolkit
+import apis
+
 nlp = spacy.en.English()
 
 
@@ -10,16 +13,16 @@ class MutableToken(object):
         self.i = i
 
     @property
-    def _token(self):
+    def _tkn(self):
         return self.parent._doc[self.i]
 
     @property
     def string(self):
-        return self._token.string
+        return self._tkn.string
 
     @property
     def lower(self):
-        return self._token.lower_
+        return self._tkn.lower_
 
     @string.setter
     def string(self, value):
@@ -27,15 +30,15 @@ class MutableToken(object):
 
     @property
     def is_noun(self):
-        return self._token.pos_ == u'NOUN' and not self.is_person
+        return self._tkn.pos_ == u'NOUN' and not self.is_person
 
     @property
     def is_verb(self):
-        return self._token.pos_ == u'VERB'
+        return self._tkn.pos_ == u'VERB'
 
     @property
     def is_adjective(self):
-        return self._token.pos_ == u'ADJ'
+        return self._tkn.pos_ == u'ADJ'
 
     @property
     def is_notable(self):
@@ -44,9 +47,28 @@ class MutableToken(object):
     @property
     def is_person(self):
         try:
-            return self._token.ent_type_ == u'PERSON'
+            return self._tkn.ent_type_ == u'PERSON'
         except AttributeError:
             return False
+
+
+    def images(self):
+        raise NotImplementedError
+
+    def gifs(self):
+        raise NotImplementedError
+
+    def definition(self):
+        return apis.dictionary.define(self.lower)
+
+    def clinaments(self):
+        return toolkit.clinaments(self.lower)
+
+    def rhymes(self):
+        raise NotImplementedError
+
+    def related(self):
+        raise NotImplementedError
 
 
     def __str__(self):
@@ -54,13 +76,6 @@ class MutableToken(object):
 
     def __repr__(self):
         return str(self)
-
-
-def ensure_unicode(string):
-    if isinstance(string, str):
-        return string.decode('utf-8')
-    else:
-        return string
 
 
 
@@ -115,7 +130,7 @@ class DocFrame(object):
 class MutableDoc(DocFrame):
 
     def __init__(self, string):
-        string = ensure_unicode(string)
+        string = toolkit.ensure_unicode(string)
         self._doc = nlp(string)
         for ent in reversed(self._doc.ents):
             ent.merge(ent.root.tag_, ent.root.lemma_, ent.label_)
