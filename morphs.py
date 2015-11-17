@@ -5,7 +5,7 @@ import string
 from apis.free import Spellchecker
 
 
-class Morpher(object):
+class WordMorpher(object):
 
     def __init__(self, seed):
         self.used = []
@@ -60,5 +60,3 @@ if __name__ == "__main__":
         print "funk"
         for word in morpher:
             print word
-
-
