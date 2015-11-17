@@ -3,6 +3,67 @@ import spacy.en
 nlp = spacy.en.English()
 
 
+class MutableToken(object):
+
+    def __init__(self, parent, i):
+        self.parent = parent #TODO: use a weakref here
+        self.i = i
+
+    @property
+    def _token(self):
+        return self.parent._doc[self.i]
+
+    @property
+    def string(self):
+        return self._token.string
+
+    @property
+    def lower(self):
+        return self._token.lower_
+
+    @string.setter
+    def string(self, value):
+        self.parent.mutate_token(self.i, value)
+
+    @property
+    def is_noun(self):
+        return self._token.pos_ == u'NOUN' and not self.is_person
+
+    @property
+    def is_verb(self):
+        return self._token.pos_ == u'VERB'
+
+    @property
+    def is_adjective(self):
+        return self._token.pos_ == u'ADJ'
+
+    @property
+    def is_notable(self):
+        raise NotImplementedError
+
+    @property
+    def is_person(self):
+        try:
+            return self._token.ent_type_ == u'PERSON'
+        except AttributeError:
+            return False
+
+
+    def __str__(self):
+        return self.string
+
+    def __repr__(self):
+        return str(self)
+
+
+def ensure_unicode(string):
+    if isinstance(string, str):
+        return string.decode('utf-8')
+    else:
+        return string
+
+
+
 class DocFrame(object):
 
     def __init__(self, tokens):
@@ -40,71 +101,15 @@ class DocFrame(object):
         self.tokens[key].string = value
 
 
+    def __len__(self):
+        return len(self.tokens)
+
     def __str__(self):
         return "[" + ", ".join([str(token) for token in self.tokens]) + "]"
 
     def __repr__(self):
         return str(self)
 
-
-class MutableToken(object):
-
-    def __init__(self, parent, i):
-        self.parent = parent #use a weakref here
-        self.i = i
-
-    @property
-    def token(self):
-        return self.parent._doc[self.i]
-
-    @property
-    def string(self):
-        return self.token.string
-
-    @property
-    def lower(self):
-        return self.token.lower_
-
-    @string.setter
-    def string(self, value):
-        self.parent.mutate_token(self.i, value)
-
-    @property
-    def is_noun(self):
-        return self.token.pos_ == u'NOUN' and not self.is_person
-
-    @property
-    def is_verb(self):
-        return self.token.pos_ == u'VERB'
-
-    @property
-    def is_adjective(self):
-        return self.token.pos_ == u'ADJ'
-
-    @property
-    def is_notable(self):
-        raise NotImplementedError
-
-    @property
-    def is_person(self):
-        try:
-            return self.token.ent_type_ == u'PERSON'
-        except AttributeError:
-            return False
-
-
-    def __str__(self):
-        return self.string
-
-    def __repr__(self):
-        return str(self)
-
-
-def ensure_unicode(string):
-    if isinstance(string, str):
-        return string.decode('utf-8')
-    else:
-        return string
 
 
 class MutableDoc(DocFrame):
