@@ -1,2 +1,1 @@
-from . import free
-from . import paid
+from .mashape import *

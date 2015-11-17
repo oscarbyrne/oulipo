@@ -1,9 +1,18 @@
-import abc
+import requests
 from os.path import join, dirname, realpath
 import sqlite3
-import logging
 
-from ..common import MashapeAPI
+from ..keys import mashape_key
+
+
+headers = {
+    "X-Mashape-Key": mashape_key,
+    "Accept": "application/json",
+}
+
+def get(api_name, method, **kwargs):
+    url = "https://{}.p.mashape.com/{}".format(api_name, method)
+    return requests.get(url, headers=headers, **kwargs).json()
 
 
 class APIDatabase(object):
@@ -20,7 +29,7 @@ class APIDatabase(object):
 
     def query(self, string, *args):
         with sqlite3.connect(self.name) as con:
-            cur = con.cursor()    
+            cur = con.cursor()
             cur.execute(string, args)
             return cur.fetchall()
 
@@ -50,42 +59,3 @@ class APIDatabase(object):
     def increment(self, name):
         n = self.get_requests(name)
         self.insert(name, n+1)
-
-
-
-class NoMoreFreeRequestsError(Exception):
-    pass
-
-
-class PaidAPI(MashapeAPI):
-
-    def __init__(self):
-        self.logger = logging.getLogger(self.name)
-        self.api_db = APIDatabase()
-
-    @abc.abstractproperty
-    def free_requests(self):
-        return 0
-
-    def increment_requests(self):
-        self.api_db.increment(self.name)
-
-    @property
-    def used_requests(self):
-        return self.api_db.get_requests(self.name)
-
-    @property
-    def remaining_requests(self):
-        requests = self.free_requests - self.used_requests
-        self.logger.log(
-            logging.WARNING if requests < 100 else logging.INFO, 
-            "Remaining requests: {}/{}".format(requests, self.free_requests)
-        )
-        return requests
-
-    def get(self, method, **kwargs):
-        if self.remaining_requests < 1:
-            raise NoMoreFreeRequestsError
-        else:
-            self.increment_requests()
-            return MashapeAPI.get(self, method, **kwargs)

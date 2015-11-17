@@ -1,8 +1,7 @@
-import requests
 import random
 import string
 
-from apis.free import Spellchecker
+import apis
 
 
 class WordMorpher(object):
@@ -29,7 +28,7 @@ class WordMorpher(object):
 
     @staticmethod
     def get_spelling_suggestions(word):
-        return Spellchecker().suggestions(word)
+        return apis.spellcheck.suggestions(word)
 
     def choose_word(self, suggested):
         choices = [word for word in suggested if word not in self.used]
@@ -56,7 +55,7 @@ class WordMorpher(object):
 if __name__ == "__main__":
     random.seed()
     while True:
-        morpher = Morpher("funk")
+        morpher = WordMorpher("funk")
         print "funk"
         for word in morpher:
             print word
