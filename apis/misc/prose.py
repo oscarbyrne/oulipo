@@ -4,6 +4,7 @@ import re
 from gutenberg.acquire import load_etext
 from gutenberg.cleanup import strip_headers
 
+from ..mashape import language
 
 
 #TO DO:
@@ -30,7 +31,7 @@ def is_useful_prose(text):
     if not suitable_length:
         return False
 
-    is_english = Langdetecter().is_english(text.split(".")[0]) #check first sentence
+    is_english = language.is_english(text.split(".")[0]) #check first sentence
     if not is_english:
         return False
 
