@@ -31,6 +31,10 @@ class MutableToken(object):
         self.parent.mutate_token(self.i, value)
 
     @property
+    def is_punctuation(self):
+        return self._tkn.is_punct
+
+    @property
     def is_noun(self):
         return self._tkn.pos_ == u'NOUN' and not self.is_person
 
@@ -87,6 +91,10 @@ class MutableDocFrame(object):
         self.tokens = list(tokens)
 
     @property
+    def words(self):
+        return MutableDocFrame(t for t in self.tokens if not t.is_punctuation)
+
+    @property
     def nouns(self):
         return MutableDocFrame(t for t in self.tokens if t.is_noun)
 
@@ -138,9 +146,9 @@ class MutableDoc(MutableDocFrame):
             ent.merge(ent.root.tag_, ent.root.lemma_, ent.label_)
         self.tokens = [MutableToken(self, token.i) for token in self._doc]
 
-    def mutate_token(self, i, value):
+    def mutate_token(self, i, string):
         strings = [token.string for token in self._doc]
-        strings[i] = value if self._doc[i+1].is_punct else value + " "
+        strings[i] = string if self._doc[i+1].is_punct else string + " "
         self.__init__("".join(strings))
 
 
