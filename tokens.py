@@ -1,3 +1,5 @@
+import weakref
+
 import spacy.en
 
 import toolkit
@@ -9,7 +11,7 @@ nlp = spacy.en.English()
 class MutableToken(object):
 
     def __init__(self, parent, i):
-        self.parent = parent #TODO: use a weakref here
+        self.parent = weakref.proxy(parent)
         self.i = i
 
     @property
@@ -18,7 +20,7 @@ class MutableToken(object):
 
     @property
     def string(self):
-        return self._tkn.string
+        return self._tkn.orth_
 
     @property
     def lower(self):
@@ -79,37 +81,37 @@ class MutableToken(object):
 
 
 
-class DocFrame(object):
+class MutableDocFrame(object):
 
     def __init__(self, tokens):
         self.tokens = list(tokens)
 
     @property
     def nouns(self):
-        return DocFrame(t for t in self.tokens if t.is_noun)
+        return MutableDocFrame(t for t in self.tokens if t.is_noun)
 
     @property
     def verbs(self):
-        return DocFrame(t for t in self.tokens if t.is_verb)
+        return MutableDocFrame(t for t in self.tokens if t.is_verb)
 
     @property
     def adjectives(self):
-        return DocFrame(t for t in self.tokens if t.is_adjective)
+        return MutableDocFrame(t for t in self.tokens if t.is_adjective)
 
     @property
     def notable(self):
-        return DocFrame(t for t in self.tokens if t.is_notable)
+        return MutableDocFrame(t for t in self.tokens if t.is_notable)
 
     @property
     def people(self):
-        return DocFrame(t for t in self.tokens if t.is_person)
+        return MutableDocFrame(t for t in self.tokens if t.is_person)
 
 
     def __getitem__(self, key):
         if isinstance(key, int):
             return self.tokens[key]
         else:
-            return DocFrame(t for t in self.tokens if t.lower == key.lower())
+            return MutableDocFrame(t for t in self.tokens if t.lower == key.lower())
 
     def __setitem__(self, key, value):
         assert isinstance(key, int)
@@ -127,14 +129,14 @@ class DocFrame(object):
 
 
 
-class MutableDoc(DocFrame):
+class MutableDoc(MutableDocFrame):
 
     def __init__(self, string):
         string = toolkit.ensure_unicode(string)
         self._doc = nlp(string)
         for ent in reversed(self._doc.ents):
             ent.merge(ent.root.tag_, ent.root.lemma_, ent.label_)
-        self.tokens = [MutableToken(self, i) for i in xrange(len(self._doc))]
+        self.tokens = [MutableToken(self, token.i) for token in self._doc]
 
     def mutate_token(self, i, value):
         strings = [token.string for token in self._doc]
