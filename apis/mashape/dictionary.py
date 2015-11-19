@@ -5,4 +5,7 @@ api_name = "montanaflynn-dictionary"
 
 def define(word):
     r = get(api_name, "define", params={"word": word})
-    return r["definitions"][0]["text"]
+    try:
+        return r["definitions"][0]["text"]
+    except IndexError:
+        return ""
