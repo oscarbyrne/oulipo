@@ -26,8 +26,8 @@ def get_raw_paragraph():
     paragraphs = text.split("\n\n")
     return paragraphs[len(paragraphs)//2]
 
-def is_useful_prose(text):
-    suitable_length = len(text) > 300 and len(text) < 2000
+def is_useful_prose(text, min_length, max_length):
+    suitable_length = min_length < len(text) < max_length
     if not suitable_length:
         return False
 
@@ -43,10 +43,10 @@ def sanitize_text(text):
     text = " ".join(text.split())                   #remove unnecessary whitespace
     return text
 
-def get_paragraph():
+def get_paragraph(min_length=200, max_length=1000):
     while True:
         paragraph = get_raw_paragraph()
-        if is_useful_prose(paragraph):
+        if is_useful_prose(paragraph, min_length, max_length):
             return sanitize_text(paragraph)
         else:
             pass
