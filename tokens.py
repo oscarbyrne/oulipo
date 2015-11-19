@@ -1,4 +1,5 @@
 import weakref
+import inspect
 
 import spacy.en
 
@@ -26,9 +27,17 @@ class MutableToken(object):
     def lower(self):
         return self._tkn.lower_
 
+    @property
+    def lemma(self):
+        return self._tkn.lemma_
+
     @string.setter
     def string(self, value):
         self.parent.mutate_token(self.i, value)
+
+    @property
+    def notability(self):
+        return - self._tkn.prob
 
     @property
     def is_punctuation(self):
@@ -48,7 +57,7 @@ class MutableToken(object):
 
     @property
     def is_notable(self):
-        raise NotImplementedError
+        return self.notability > 10
 
     @property
     def is_person(self):
@@ -56,6 +65,24 @@ class MutableToken(object):
             return self._tkn.ent_type_ == u'PERSON'
         except AttributeError:
             return False
+
+    @property
+    def is_location(self):
+        try:
+            return self._tkn.ent_type_ in [u'FACILITY', u'GPE', u'LOC']
+        except AttributeError:
+            return False
+
+    @property
+    def is_group(self):
+        try:
+            return self._tkn.ent_type_ in [u'NORP', u'ORG']
+        except AttributeError:
+            return False
+
+    @property
+    def is_entity(self):
+        return any([self.is_person, self.is_location, self.is_group])
 
 
     def images(self):
@@ -65,7 +92,7 @@ class MutableToken(object):
         raise NotImplementedError
 
     def definition(self):
-        return apis.dictionary.define(self.lower)
+        return apis.dictionary.define(self.lemma)
 
     def clinaments(self):
         return toolkit.clinaments(self.lower)
@@ -84,6 +111,16 @@ class MutableToken(object):
         return str(self)
 
 
+class GroupedMethods(object):
+
+    #TODO: use threads
+
+    def __init__(self, methods):
+        self.methods = list(methods)
+
+    def __call__(self, *args, **kwargs):
+        return [method(*args, **kwargs) for method in self.methods]
+
 
 class MutableDocFrame(object):
 
@@ -93,6 +130,10 @@ class MutableDocFrame(object):
     @property
     def words(self):
         return MutableDocFrame(t for t in self.tokens if not t.is_punctuation)
+
+    @property
+    def notable(self):
+        return MutableDocFrame(t for t in self.tokens if t.is_notable)
 
     @property
     def nouns(self):
@@ -107,12 +148,25 @@ class MutableDocFrame(object):
         return MutableDocFrame(t for t in self.tokens if t.is_adjective)
 
     @property
-    def notable(self):
-        return MutableDocFrame(t for t in self.tokens if t.is_notable)
-
-    @property
     def people(self):
         return MutableDocFrame(t for t in self.tokens if t.is_person)
+
+    @property
+    def places(self):
+        return MutableDocFrame(t for t in self.tokens if t.is_location)
+
+    @property
+    def groups(self):
+        return MutableDocFrame(t for t in self.tokens if t.is_group)
+
+    @property
+    def entities(self):
+        return MutableDocFrame(t for t in self.tokens if t.is_entity)
+
+
+    @property
+    def by_notability(self):
+        return MutableDocFrame(sorted(self.tokens, key=lambda t: t.notability, reverse=True))
 
 
     def __getitem__(self, key):
@@ -124,6 +178,14 @@ class MutableDocFrame(object):
     def __setitem__(self, key, value):
         assert isinstance(key, int)
         self.tokens[key].string = value
+
+    def __getattr__(self, name):
+        if hasattr(MutableToken, name):
+            attributes = [getattr(token, name) for token in self.tokens]
+            if inspect.ismethod(getattr(MutableToken, name)):
+                return GroupedMethods(attributes)
+            else:
+                return attributes
 
 
     def __len__(self):
