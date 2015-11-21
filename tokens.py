@@ -1,12 +1,12 @@
 import weakref
 import inspect
 
-import spacy.en
+import numpy as np
 
+import nlp
 import toolkit
 import apis
 
-nlp = spacy.en.English()
 
 
 class MutableToken(object):
@@ -23,17 +23,13 @@ class MutableToken(object):
     def string(self):
         return self._tkn.orth_
 
-    @property
-    def lower(self):
-        return self._tkn.lower_
-
-    @property
-    def lemma(self):
-        return self._tkn.lemma_
-
     @string.setter
     def string(self, value):
         self.parent.mutate_token(self.i, value)
+
+    @property
+    def lower(self):
+        return self._tkn.lower_
 
     @property
     def notability(self):
@@ -85,23 +81,56 @@ class MutableToken(object):
         return any([self.is_person, self.is_location, self.is_group])
 
 
+    def fetch_images(self):
+        raise NotImplementedError
+
+    def fetch_gifs(self):
+        raise NotImplementedError
+
+    def fetch_definition(self):
+        return apis.dictionary.define(self._tkn.lemma_)
+
+    def fetch_clinaments(self):
+        return toolkit.clinaments(self.lower)
+
+    def fetch_similar(self):
+        return toolkit.lexemes_ranked_by_similarity_to(self._tkn)
+
+
     def images(self):
         raise NotImplementedError
 
     def gifs(self):
         raise NotImplementedError
+        
 
     def definition(self):
-        return apis.dictionary.define(self.lemma)
+        try:
+            return self._definition
+        except AttributeError:
+            self._definition = self.fetch_definition()
+            return self.definition()
 
     def clinaments(self):
-        return toolkit.clinaments(self.lower)
+        try:
+            return self._clinaments
+        except AttributeError:
+            self._clinaments = self.fetch_clinaments()
+            return self.clinaments()
 
     def rhymes(self):
-        raise NotImplementedError
+        try:
+            return self._rhymes
+        except AttributeError:
+            self._rhymes = self.fetch_rhymes()
+            return self.rhymes()
 
-    def related(self):
-        raise NotImplementedError
+    def similar(self, number=5):
+        try:
+            return [lex.orth_ for lex in self._similar[:number]]
+        except AttributeError:
+            self._similar = self.fetch_similar()
+            return self.similar()
 
 
     def __str__(self):
@@ -203,7 +232,7 @@ class MutableDoc(MutableDocFrame):
 
     def __init__(self, string):
         string = toolkit.ensure_unicode(string)
-        self._doc = nlp(string)
+        self._doc = nlp.nlp(string)
         for ent in reversed(self._doc.ents):
             ent.merge(ent.root.tag_, ent.root.lemma_, ent.label_)
         self.tokens = [MutableToken(self, token.i) for token in self._doc]
