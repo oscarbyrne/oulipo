@@ -1,7 +1,10 @@
 import random
 import string
 
+import numpy as np
+
 import apis
+import nlp
 
 random.seed()
 
@@ -25,3 +28,10 @@ def clinaments(word):
     mutated = mutate(word)
     suggestions = apis.spellcheck.suggestions(mutated)
     return [word for word in suggestions if contains_only_letters(word)]
+
+def lexemes_ranked_by_similarity_to(token):
+    excluded = [token.lemma_.lower(), token.lower_]
+    not_this = np.vectorize(lambda lexeme: lexeme.lower_ not in excluded)
+    words = nlp.unique_words[not_this(nlp.unique_words)]
+    similarity = np.vectorize(token.similarity)
+    return words[np.argsort(similarity(words))][::-1]
