@@ -102,7 +102,7 @@ class MutableToken(object):
 
     def gifs(self):
         raise NotImplementedError
-        
+
 
     def definition(self):
         try:
@@ -159,6 +159,10 @@ class MutableDocFrame(object):
     @property
     def words(self):
         return MutableDocFrame(t for t in self.tokens if not t.is_punctuation)
+
+    @property
+    def punctuation(self):
+        return MutableDocFrame(t for t in self.tokens if t.is_punctuation)
 
     @property
     def notable(self):
@@ -239,7 +243,7 @@ class MutableDoc(MutableDocFrame):
 
     def mutate_token(self, i, string):
         strings = [token.string for token in self._doc]
-        strings[i] = string if self._doc[i+1].is_punct else string + " "
+        strings[i] = string + self._doc[i].whitespace_
         self.__init__("".join(strings))
 
 
