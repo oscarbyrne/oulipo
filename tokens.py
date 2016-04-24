@@ -90,8 +90,8 @@ class MutableToken(object):
     def fetch_definition(self):
         return apis.dictionary.define(self._tkn.lemma_)
 
-    def fetch_clinaments(self):
-        return toolkit.clinaments(self.lower)
+    def fetch_clinamens(self):
+        return toolkit.clinamens(self.lower)
 
     def fetch_similar(self):
         return toolkit.lexemes_ranked_by_similarity_to(self._tkn)
@@ -111,12 +111,12 @@ class MutableToken(object):
             self._definition = self.fetch_definition()
             return self.definition()
 
-    def clinaments(self):
+    def clinamens(self):
         try:
-            return self._clinaments
+            return self._clinamens
         except AttributeError:
-            self._clinaments = self.fetch_clinaments()
-            return self.clinaments()
+            self._clinamens = self.fetch_clinamens()
+            return self.clinamens()
 
     def rhymes(self):
         try:

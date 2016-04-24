@@ -24,7 +24,7 @@ def mutate(word):
 def contains_only_letters(word):
     return all(char in string.ascii_lowercase for char in word.lower())
 
-def clinaments(word):
+def clinamens(word):
     mutated = mutate(word)
     suggestions = apis.spellcheck.suggestions(mutated)
     return [word for word in suggestions if contains_only_letters(word)]
